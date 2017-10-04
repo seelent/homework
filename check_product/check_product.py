@@ -11,8 +11,11 @@ def check_page(reg_price_selector, cam_price_selector, name_selector, duck, page
 
     check_price_properties(reg_price_obj, cam_price_obj, page)
 
-    if duck['regular_price'] < duck['campaign-price']:
-        raise Exception('Regular_price of duck on {} page is bigger than campaign price'.format(page))
+    rp_size = float(reg_price_obj.value_of_css_property('font-size').replace('px', ''))
+    cp_size = float(cam_price_obj.value_of_css_property('font-size').replace('px', ''))
+
+    if rp_size > cp_size:
+        raise Exception('Font of regular_price of duck on {} page is bigger than campaign price\'s font'.format(page))
 
 def check_price_properties(regular_price, campaign_price, page):
     rp_color_raw = regular_price.value_of_css_property('color')
