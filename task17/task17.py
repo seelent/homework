@@ -163,9 +163,11 @@ class Page:
 
     def check_log(self):
         log = self.driver.get_log("browser")
-        print("# Len of log: {}".format(len(log)))
-        for entry in log:
-            print("Entry = {}".format(entry))
+        if len(log)>0:
+            for entry in log:
+                print("Entry = {}".format(entry))
+            raise Exception('Some entries in log')
+
 
     def __getattr__(self, item):
         if hasattr(self.driver, item):
@@ -174,12 +176,7 @@ class Page:
             raise Exception('Page objeect has not such attribute: {}'.format(item))
 
     def close(self):
-        cur_id = self.driver.current_window_handle
-        for i in self.current_window_dict:
-            if cur_id == self.current_window_dict[i]:
-                print ('Current page: {}'.format(i))
-        if self.close_browser:
-            self.driver.close()
+        self.driver.quit()
 
 
 
