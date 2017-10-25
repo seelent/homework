@@ -61,32 +61,6 @@ class UI:
                 print(e)
                 pass
 
-    def remember(self, selector, save_text_to=None):
-        print('\n# Remembering {}'.format(selector))
-        element = self.wait_n_get(selector)[0]
-        setattr(self, selector, element)
-        if save_text_to is not None:
-            setattr(self, save_text_to, element.get_attribute('textContent'))
-
-    def wait_refreshing(self, page_element, old_value=None, absence_is_ok=False):
-        print('\n# Waiting fo refresh of {}'.format(page_element))
-        try:
-            if old_value is not None:
-                init_value = getattr(self, old_value)
-                while True:
-                    current_value = self.wait_n_get(page_element)[0].get_attribute('textContent')
-                    if current_value != init_value:
-                        break
-            else:
-                self.wait(EC.staleness_of(self.wait_n_get(page_element)[0]))
-                self.wait_n_get(page_element)
-
-        except Exception as e:
-            print('# {} is absent'.format(page_element))
-            if absence_is_ok:
-                return True
-            else:
-                raise e
 
     def count_pcs_in_table(self):
         print('\n# Counting pcs in table')
@@ -129,7 +103,7 @@ class MainPage:
     def __init__(self, ui):
         self.ui = ui
 
-    def choose_product(self, name):
+    def choose_product(self, name='first_product'):
         self.ui.click(name)
 
     def go_to_cart(self):
@@ -140,7 +114,7 @@ class ProductPage:
     def __init__(self, ui):
         self.ui = ui
 
-    def add_product_to_cart(self, size):
+    def add_product_to_cart(self, size='Medium'):
         self.ui.select('size', size)
         self.ui.click('add_to_cart_button')
 
@@ -156,7 +130,7 @@ class CartPage:
     def verify_qty(self):
         self.ui.compare(self.ui.count_pcs_in_table(), self.qty, raise_ex=True)
 
-    def delete_product(self, qty):
+    def delete_product(self, qty=1):
         self.ui.set_value('qty_of_products_field_in_cart', str(qty))
         self.ui.click('del_from_cart_button')
 
@@ -187,6 +161,7 @@ class Page:
             'qty_of_products_field_in_cart': 'input[type=number][name=quantity]',
             'successful': 'div#checkout-cart-wrapper>p>em'
         }
+
         self.select_variants = [
             'Small',
             'Medium +$2.50',
@@ -213,6 +188,13 @@ class Page:
         if save_text_to is not None:
             setattr(self, save_text_to, element.get_attribute('textContent'))
 
+    def remember_total_price(self):
+        self.remember('product_table_total_price', save_text_to='total_price')
+
+    def remember_product_qty(self):
+        self.remember('qty', save_text_to = 'remembered_qty')
+
+
     def wait_refreshing(self, page_element, old_value=None, absence_is_ok=False):
         print('\n# Waiting fo refresh of {}'.format(page_element))
         try:
@@ -225,15 +207,22 @@ class Page:
             else:
                 self.ui.wait(EC.staleness_of(self.ui.wait_n_get(page_element)[0]))
                 self.ui.wait_n_get(page_element)
-
+            print('NOT THERE')
         except Exception as e:
-            print('# {} is absent'.format(page_element))
+            print('# {} is absent. It\'s ok: {}'.format(page_element, absence_is_ok))
             if absence_is_ok:
                 return True
             else:
                 raise e
 
+    def wait_refreshing_of_qty(self):
+        return self.wait_refreshing('qty', old_value='remembered_qty')
+
+    def wait_refreshing_of_total_price(self):
+        return self.wait_refreshing('product_table_total_price', absence_is_ok=True)
+
     def check_successful(self):
+        print('#Checking result')
         try:
             final_phrase = self.ui.wait_n_get('successful')[0].get_attribute('textContent')
             if final_phrase == 'There are no items in your cart.':
@@ -243,6 +232,7 @@ class Page:
         except Exception as ex:
             print('\n\n\n\n Final check was not successful')
             raise ex
+
 
     def quit(self):
         if self.close_browser:
@@ -257,13 +247,13 @@ try:
     api.open('http://127.0.0.1:8080/litecard/')
 
     for i in range(0, api.product_limit):
-        api.remember('qty', save_text_to='remembered_qty')
+        api.remember_product_qty()
 
-        api.MainPage.choose_product('first_product')
+        api.MainPage.choose_product()
 
-        api.ProductPage.add_product_to_cart('Medium')
+        api.ProductPage.add_product_to_cart()
 
-        api.wait_refreshing('qty', old_value='remembered_qty')
+        api.wait_refreshing_of_qty()
 
         api.ProductPage.return_to_main_page()
 
@@ -272,11 +262,11 @@ try:
     api.CartPage.verify_qty()
 
     for i in range(0, api.product_limit):
-        api.remember('product_table_total_price', save_text_to='total_price')
+        api.remember_total_price()
 
-        api.CartPage.delete_product(1)
+        api.CartPage.delete_product()
 
-        if api.wait_refreshing('product_table_total_price', absence_is_ok=True):
+        if api.wait_refreshing_of_total_price():
             break
 
     api.check_successful()
