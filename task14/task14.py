@@ -27,17 +27,14 @@ class Page:
             'password_field':'div#box-login [name=password]',
             'login_button':'div#box-login [name=login]',
             'countries':'//ul[@id="box-apps-menu"]//a[contains(@href, "countries")]',
-            'add_new_country':'//td[@id = "content"]//a[@class="button"][contains(@href, "edit_country")]',
-            'ISO 3166-1 alpha-2': '//form[@method="post"]//a[contains(@href, "wiki/ISO_3166-1_alpha-2")]',
-            'ISO 3166-1 alpha-3': '//form[@method="post"]//a[contains(@href, "wiki/ISO_3166-1_alpha-3")]',
-            'Tax ID Format': '//form[@method="post"]//strong[contains(text(), "Tax ID Format")]/../a',
-            'Address Format': '//form[@method="post"]//a[contains(@href, "/countries-data/address-formats.html")]',
-            'Postcode Format': '//form[@method="post"]//strong[contains(text(), "Postcode Format")]/../a',
-            'Currency Code': '//form[@method="post"]//a[contains(@href, "capitals_with_currency_and_language")]',
-            'Phone Country Code': '//form[@method="post"]//a[contains(@href, "List_of_country_calling_codes")]'
+            'add_new_country':'//td[@id = "content"]//a[@class="button"][contains(@href, "edit_country")]'
         }
-        self.checking_pages = ['ISO 3166-1 alpha-2', 'ISO 3166-1 alpha-3', 'Tax ID Format', 'Address Format',
-                               'Postcode Format', 'Currency Code', 'Phone Country Code']
+
+        self.link_parts = ["wiki/ISO_3166-1_alpha-2", "wiki/ISO_3166-1_alpha-3",
+                           "/countries-data/address-formats.html", "capitals_with_currency_and_language",
+                           '"Tax ID Format")]/../',
+                           '"Postcode Format")]/../'
+                           ]
 
         self.select_variants = [
             'Small',
@@ -52,6 +49,23 @@ class Page:
         password_field[0].send_keys('admin')
         login_button = self.wait_n_get('login_button')
         login_button[0].click()
+
+    def click_all_links(self):
+        for link in self.link_parts:
+            if re.search('.*/\.\./.*', link):
+                selector = '//form[@method="post"]//strong[contains(text(), {}a'.format(link)
+            else:
+                selector ='//form[@method="post"]//a[contains(@href, "{}")]'.format(link)
+            print(selector)
+            self.current_window_ids = []
+            self.current_window_dict = {}
+            self.remember_new_window_as('main')
+            self.xfind(selector)[0].click()
+            self.remember_new_window_as(link)
+            self.move_to(link)
+            self.wait_n_get('body')
+            self.close()
+            self.move_to('main')
 
     def wait_n_get(self, selector):
         #print('\n# Waiting for {}'.format(selector))
@@ -181,25 +195,15 @@ class Page:
         if self.close_browser:
             self.driver.close()
 
-
-
 page = None
 try:
     page = Page(close=True, write=True)
     page.authorizate()
     page.click('countries')
     page.click('add_new_country')
-    for new_page in page.checking_pages:
-        page.current_window_ids = []
-        page.current_window_dict = {}
-        page.remember_new_window_as('main')
-        page.click(new_page)
-        page.remember_new_window_as(new_page)
-        page.move_to(new_page)
-        page.wait_n_get('body')
-        page.close()
-        page.move_to('main')
+    page.click_all_links()
     page.driver.quit()
+
 except Exception as e:
     page.close()
     raise e
