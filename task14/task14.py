@@ -30,12 +30,6 @@ class Page:
             'add_new_country':'//td[@id = "content"]//a[@class="button"][contains(@href, "edit_country")]'
         }
 
-        self.link_parts = ["wiki/ISO_3166-1_alpha-2", "wiki/ISO_3166-1_alpha-3",
-                           "/countries-data/address-formats.html", "capitals_with_currency_and_language",
-                           '"Tax ID Format")]/../',
-                           '"Postcode Format")]/../'
-                           ]
-
         self.select_variants = [
             'Small',
             'Medium +$2.50',
@@ -51,18 +45,15 @@ class Page:
         login_button[0].click()
 
     def click_all_links(self):
+        self.link_parts = self.xfind('//form[@method="post"]//a[not(contains(@id,"hint"))]')
+        print('Link qty: {}'.format(len(self.link_parts)))
         for link in self.link_parts:
-            if re.search('.*/\.\./.*', link):
-                selector = '//form[@method="post"]//strong[contains(text(), {}a'.format(link)
-            else:
-                selector ='//form[@method="post"]//a[contains(@href, "{}")]'.format(link)
-            print(selector)
             self.current_window_ids = []
             self.current_window_dict = {}
             self.remember_new_window_as('main')
-            self.xfind(selector)[0].click()
-            self.remember_new_window_as(link)
-            self.move_to(link)
+            link.click()
+            self.remember_new_window_as('new_link')
+            self.move_to('new_link')
             self.wait_n_get('body')
             self.close()
             self.move_to('main')
